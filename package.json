@@ -1,0 +1,31 @@
+{
+  "name": "discourse-skeleton-update",
+  "version": "0.1.0",
+  "description": "Update Discourse theme and plugin scaffolding and install its dependencies",
+  "type": "module",
+  "bin": {
+    "discourse-skeleton-update": "bin/discourse-skeleton-update.js"
+  },
+  "files": [
+    "bin/",
+    "src/"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "lint": "eslint . && prettier . --check",
+    "lint:fix": "eslint . --fix && prettier . --write"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "execa": "^10.0.1"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "devDependencies": {
+    "@discourse/lint-configs": "3.2.0",
+    "eslint": "10.6.0",
+    "prettier": "3.8.1"
+  }
+}
