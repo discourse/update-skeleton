@@ -19,6 +19,13 @@
     "node": ">=22.13.0"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/discourse/discourse-skeleton-update.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "execa": "^10.0.1"
   },
