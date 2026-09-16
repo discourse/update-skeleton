@@ -1,10 +1,10 @@
 {
-  "name": "discourse-skeleton-update",
+  "name": "@discourse/update-skeleton",
   "version": "0.1.0",
   "description": "Update Discourse theme and plugin scaffolding and install its dependencies",
   "type": "module",
   "bin": {
-    "discourse-skeleton-update": "bin/discourse-skeleton-update.js"
+    "update-skeleton": "bin/update-skeleton.js"
   },
   "files": [
     "bin/",
@@ -21,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/discourse/discourse-skeleton-update.git"
+    "url": "git+https://github.com/discourse/update-skeleton.git"
   },
   "publishConfig": {
     "access": "public"

@@ -8,7 +8,7 @@ try {
   });
   if (values.help) {
     console.log(
-      "Run discourse-skeleton-update from a theme or plugin root to replace scaffolding and install dependencies."
+      "Run update-skeleton from a theme or plugin root to replace scaffolding and install dependencies."
     );
   } else {
     await update();

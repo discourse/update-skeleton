@@ -80,13 +80,13 @@ for (const type of ["theme", "plugin"]) {
     assert.equal(pkg.private, false);
     assert.equal(pkg.scripts.build, "custom build");
     assert.equal(
-      pkg.scripts["discourse-skeleton-update"],
-      "pnpx discourse-skeleton-update@latest"
+      pkg.scripts["update-skeleton"],
+      "pnpx @discourse/update-skeleton@latest"
     );
     assert.equal(pkg.optionalDependencies.eslint, "10.6.0");
     assert.equal(pkg.devDependencies.eslint, undefined);
     assert.equal(pkg.devDependencies["ember-template-lint"], undefined);
-    assert.equal(pkg.devDependencies["discourse-skeleton-update"], undefined);
+    assert.equal(pkg.devDependencies["@discourse/update-skeleton"], undefined);
     assert.equal(
       await fs.readFile(path.join(f.directory, "eslint.config.mjs"), "utf8"),
       f.snapshot.files["eslint.config.mjs"]
@@ -158,8 +158,7 @@ test("a failed Bundler update stops subsequent commands and can be retried", asy
 });
 
 test("CLI help works without a project and unknown options fail", async () => {
-  const cli = new URL("../bin/discourse-skeleton-update.js", import.meta.url)
-    .pathname;
+  const cli = new URL("../bin/update-skeleton.js", import.meta.url).pathname;
   const { stdout } = await execa(process.execPath, [cli, "--help"]);
   assert.match(stdout, /theme or plugin root/);
   await assert.rejects(
