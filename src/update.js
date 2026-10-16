@@ -1,6 +1,13 @@
 import { execa } from "execa";
 import * as fs from "node:fs/promises";
 import path from "node:path";
+import { parse, parseDocument } from "yaml";
+
+// pnpm 11 and newer read these from pnpm-workspace.yaml, not .npmrc.
+const OBSOLETE_NPMRC_SETTINGS = [
+  "auto-install-peers",
+  "strict-peer-dependencies",
+];
 
 export async function update({
   directory = process.cwd(),
@@ -74,6 +81,21 @@ export async function update({
   delete pkg.scripts["lint:hbs:fix"];
   await write("package.json", `${JSON.stringify(pkg, null, 2)}\n`);
 
+  await write(
+    "pnpm-workspace.yaml",
+    mergeSettings(
+      await read("pnpm-workspace.yaml"),
+      await download("pnpm-workspace.yaml")
+    )
+  );
+  await write(
+    ".npmrc",
+    mergeLines(await read(".npmrc"), await download(".npmrc"), {
+      keyOf: npmrcSettingName,
+      remove: OBSOLETE_NPMRC_SETTINGS,
+    })
+  );
+
   await fs.mkdir(path.join(directory, ".github/workflows"), {
     recursive: true,
   });
@@ -116,15 +138,10 @@ export async function update({
   ]) {
     await fs.rm(path.join(directory, file), { force: true });
   }
-  let ignore = (await read(".gitignore")) || "";
-  for (const line of (await download(".gitignore"))
-    .split(/\r?\n/)
-    .filter(Boolean)) {
-    if (!ignore.split(/\r?\n/).includes(line)) {
-      ignore += `${ignore && !ignore.endsWith("\n") ? "\n" : ""}${line}\n`;
-    }
-  }
-  await write(".gitignore", ignore);
+  await write(
+    ".gitignore",
+    mergeLines(await read(".gitignore"), await download(".gitignore"))
+  );
 
   // Keep registry/auth settings, but remove the calling package's metadata.
   const env = { ...process.env };
@@ -142,7 +159,6 @@ export async function update({
   await run(
     "pnpm",
     [
-      "--ignore-workspace",
       "--config.manage-package-manager-versions=true",
       "install",
       "--no-frozen-lockfile",
@@ -159,4 +175,42 @@ export async function update({
   bundle exec stree write Gemfile $(git ls-files '*.rb' '*.rake' '*.thor')
   bundle exec rubocop -A
   bundle exec rubocop`);
+}
+
+function mergeSettings(current, template) {
+  const document = parseDocument(current ?? "");
+  const settings = document.toJS() ?? {};
+  for (const [key, value] of Object.entries(parse(template))) {
+    document.set(
+      key,
+      Array.isArray(value) && Array.isArray(settings[key])
+        ? [...new Set([...settings[key], ...value])]
+        : value
+    );
+  }
+  return document.toString();
+}
+
+function mergeLines(
+  current,
+  template,
+  { keyOf = (line) => line.trimEnd(), remove = [] } = {}
+) {
+  const lines = (current ?? "")
+    .split("\n")
+    .filter((line) => !remove.includes(keyOf(line)));
+  if (lines.at(-1) === "") {
+    lines.pop();
+  }
+  const keys = new Set(lines.map(keyOf));
+  for (const line of template.split("\n")) {
+    if (line && !keys.has(keyOf(line))) {
+      lines.push(line);
+    }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
+function npmrcSettingName(line) {
+  return line.split("=")[0].trim();
 }
