@@ -4,6 +4,7 @@ import * as fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { parse } from "yaml";
 import { update } from "../src/update.js";
 
 async function fixture(t, type = "theme") {
@@ -70,6 +71,14 @@ for (const type of ["theme", "plugin"]) {
       "source stays unchanged"
     );
     await fs.writeFile(path.join(f.directory, ".gitignore"), "my-cache");
+    await fs.writeFile(
+      path.join(f.directory, ".npmrc"),
+      "engine-strict = true\nauto-install-peers = false\n"
+    );
+    await fs.writeFile(
+      path.join(f.directory, "pnpm-workspace.yaml"),
+      'allowBuilds:\n  esbuild: true\nminimumReleaseAgeExclude:\n  - "@my/*"\n'
+    );
     await update(f.options);
     const text = await fs.readFile(
       path.join(f.directory, "package.json"),
@@ -104,8 +113,23 @@ for (const type of ["theme", "plugin"]) {
         /discourse\/plugins\/my-plugin\//
       );
     }
+    const workspace = await fs.readFile(
+      path.join(f.directory, "pnpm-workspace.yaml"),
+      "utf8"
+    );
+    assert.deepEqual(parse(workspace), {
+      allowBuilds: { esbuild: true },
+      minimumReleaseAgeExclude: ["@my/*", "@discourse/*"],
+      autoInstallPeers: false,
+      engineStrict: true,
+      strictPeerDependencies: true,
+    });
+    assert.equal(
+      await fs.readFile(path.join(f.directory, ".npmrc"), "utf8"),
+      "engine-strict = true\n"
+    );
     assert.deepEqual(f.calls, [
-      "pnpm --ignore-workspace --config.manage-package-manager-versions=true install --no-frozen-lockfile --prod=false",
+      "pnpm --config.manage-package-manager-versions=true install --no-frozen-lockfile --prod=false",
       "bundle install",
       "bundle update --bundler",
       "bundle update --all",
@@ -124,9 +148,37 @@ for (const type of ["theme", "plugin"]) {
       await fs.readFile(path.join(f.directory, ".gitignore"), "utf8"),
       ignore
     );
+    assert.equal(
+      await fs.readFile(path.join(f.directory, "pnpm-workspace.yaml"), "utf8"),
+      workspace
+    );
     assert.equal(f.calls.length, 8);
   });
 }
+
+test("keeps the project's .npmrc settings except those pnpm ignores there", async (t) => {
+  const f = await fixture(t);
+  await fs.writeFile(
+    path.join(f.directory, ".npmrc"),
+    "registry=https://npm.example.com/\nstrict-peer-dependencies=true\nengine-strict=false"
+  );
+  await update(f.options);
+  assert.equal(
+    await fs.readFile(path.join(f.directory, ".npmrc"), "utf8"),
+    "registry=https://npm.example.com/\nengine-strict=false\n"
+  );
+});
+
+test("copies the skeleton's .npmrc and pnpm-workspace.yaml when they are missing", async (t) => {
+  const f = await fixture(t);
+  await update(f.options);
+  for (const file of [".npmrc", "pnpm-workspace.yaml"]) {
+    assert.equal(
+      await fs.readFile(path.join(f.directory, file), "utf8"),
+      f.snapshot.files[file]
+    );
+  }
+});
 
 test("rejects an unrecognized project root", async (t) => {
   const f = await fixture(t);

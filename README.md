@@ -18,9 +18,14 @@ without adding the updater as a dependency. For local development, run
 1. Detect a plugin using `plugin.rb`, otherwise a theme using `about.json`.
 2. Fetch current files from the matching skeleton's `raw.githubusercontent.com`
    `/main/` URLs, without using the GitHub API.
-3. Merge package dependencies, scripts, and engine settings. Replace lint configs,
-   TypeScript config, Gemfile, and standard workflows; remove obsolete configs.
-   Append required `.gitignore` entries. Plugin TypeScript paths use its name header.
+3. Merge package dependencies, scripts, and engine settings. Set the skeleton's
+   `pnpm-workspace.yaml` settings, keep the project's other settings, and add list
+   entries such as `minimumReleaseAgeExclude` to the project's own. Add the
+   skeleton's `.npmrc` settings that the project lacks, and remove
+   `auto-install-peers` and `strict-peer-dependencies`, which pnpm reads from
+   `pnpm-workspace.yaml`. Replace lint configs, TypeScript config, Gemfile, and
+   standard workflows; remove obsolete configs. Append required `.gitignore`
+   entries. Plugin TypeScript paths use its name header.
 4. Install with pnpm, then run `bundle install`, `bundle update --bundler`, and
    `bundle update --all`.
 5. Print lint and autofix commands for you to run.
